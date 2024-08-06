@@ -14,7 +14,7 @@
 
 # for local testing
 %bcond_with ccache
-%bcond_with cleanup
+%bcond_without cleanup
 
 # build statically so libtriton does not depend on libLLVM-*.so
 %bcond_without static
@@ -68,7 +68,7 @@
 
 Name:		llvm-triton
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}.git%{llvm_shortcommit}
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	LLVM with MLIR for Triton %{triton_ver}
 
 License:	Apache-2.0 WITH LLVM-exception OR NCSA
@@ -182,6 +182,10 @@ cd llvm
 	\
 	-DLLVM_TARGETS_TO_BUILD=%{targets_to_build} \
 	-DLLVM_ENABLE_PROJECTS=%{enable_projects} \
+	-DLLVM_VERSION_SUFFIX=".git%{llvm_shortcommit}" \
+	-DLLVM_DEFAULT_TARGET_TRIPLE=%{llvm_triple} \
+	-DCMAKE_INSTALL_PREFIX=%{install_prefix} \
+	\
 	-DLLVM_ENABLE_LIBCXX:BOOL=OFF \
 	-DLLVM_ENABLE_ZLIB:BOOL=ON \
 	-DLLVM_ENABLE_FFI:BOOL=ON \
@@ -191,6 +195,7 @@ cd llvm
 	\
 	-DLLVM_INCLUDE_TOOLS:BOOL=ON \
 	-DLLVM_BUILD_TOOLS:BOOL=ON \
+	-DLLVM_TOOLS_INSTALL_DIR:PATH=bin \
 	\
 	-DLLVM_INCLUDE_TESTS:BOOL=OFF \
 	-DLLVM_BUILD_TESTS:BOOL=OFF \
@@ -200,17 +205,15 @@ cd llvm
 	-DLLVM_INCLUDE_EXAMPLES:BOOL=OFF \
 	-DLLVM_BUILD_EXAMPLES:BOOL=OFF \
 	\
-	-DLLVM_INCLUDE_UTILS:BOOL=ON \
-	-DLLVM_INSTALL_UTILS:BOOL=ON \
+	-DLLVM_INCLUDE_UTILS:BOOL=OFF \
+	-DLLVM_INSTALL_UTILS:BOOL=OFF \
 	-DLLVM_UTILS_INSTALL_DIR:PATH=bin \
-	-DLLVM_TOOLS_INSTALL_DIR:PATH=bin \
 	\
 	-DLLVM_INCLUDE_DOCS:BOOL=OFF \
 	-DLLVM_BUILD_DOCS:BOOL=OFF \
 	-DLLVM_ENABLE_SPHINX:BOOL=OFF \
 	-DLLVM_ENABLE_DOXYGEN:BOOL=OFF \
 	\
-	-DLLVM_VERSION_SUFFIX=".git%{llvm_shortcommit}" \
 	-DLLVM_UNREACHABLE_OPTIMIZE:BOOL=OFF \
 %if %{with static}
 	-DLLVM_BUILD_LLVM_DYLIB:BOOL=OFF \
@@ -220,8 +223,6 @@ cd llvm
 	-DLLVM_LINK_LLVM_DYLIB:BOOL=ON \
 %endif
 	-DLLVM_INSTALL_TOOLCHAIN_ONLY:BOOL=OFF \
-	-DLLVM_DEFAULT_TARGET_TRIPLE=%{llvm_triple} \
-	-DCMAKE_INSTALL_PREFIX=%{install_prefix} \
 	-DLLVM_INCLUDE_BENCHMARKS=OFF
 
 # Build libLLVM.so first.  This ensures that when libLLVM.so is linking, there
@@ -294,6 +295,9 @@ EOF
 
 
 %changelog
+* Tue Aug 06 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-2
+- Build without utils and clean up to address out of diskspace issue
+
 * Mon Aug 05 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-1
 - Initial build for Triton 2.3.1
 - Build with MLIR
