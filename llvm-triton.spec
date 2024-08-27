@@ -1,7 +1,7 @@
 # LLVM for Triton (https://github.com/triton-lang/triton)
 #
 # Triton needs a special build of LLVM with MLIR for AMD and NVIDIA GPUs.
-# Triton 2.1.3 and 3.0.0 are incompatible with regular releases of LLVM. They
+# Triton 2.3.1 and 3.0.0 are incompatible with regular releases of LLVM. They
 # need LLVM from a specific git commit.
 #
 # Spec file is based on https://src.fedoraproject.org/rpms/llvm17/blob/rawhide/f/llvm17.spec
@@ -34,12 +34,21 @@
 # build for Triton version, see cmake/llvm-hash.txt for LLVM commit hash.
 %global triton_ver 2.3.1
 
-%if "%{triton_ver}" == "2.3.1"
+%if "%{triton_ver}" == "2.1.0"
+  # PyTorch 2.3.1 ROCm build with aotriton 0.4.1b
+  %global pkg_name llvm-aotriton
+  %global llvm_commit 49af6502c6dcb4a7f7520178bd14df396f78240c
+  %global maj_ver 18
+  %global min_ver 0
+  %global patch_ver 0
+%elif "%{triton_ver}" == "2.3.1"
+  %global pkg_name llvm-triton
   %global llvm_commit 5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372
   %global maj_ver 18
   %global min_ver 0
   %global patch_ver 0
 %elif "%{triton_ver}" == "3.0.0"
+  %global pkg_name llvm-triton
   %global llvm_commit 10dc3a8e916d73291269e5e2b82dd22681489aa1
   %global maj_ver 19
   %global min_ver 0
@@ -50,7 +59,6 @@
 
 %global llvm_shortcommit %(c=%{llvm_commit}; echo ${c:0:7})
 
-%global pkg_name llvm-triton
 %global install_prefix %{_libdir}/%{name}
 %global install_bindir %{install_prefix}/bin
 %global install_includedir %{install_prefix}/include
@@ -66,14 +74,14 @@
 %global llvm_triple %{_target_platform}
 
 
-Name:		llvm-triton
+Name:		%{pkg_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}.git%{llvm_shortcommit}
 Release:	2%{?dist}
 Summary:	LLVM with MLIR for Triton %{triton_ver}
 
 License:	Apache-2.0 WITH LLVM-exception OR NCSA
 URL:		http://llvm.org
-Source0:	https://github.com/llvm/llvm-project/archive/%{llvm_commit}.tar.gz#/llvm-project-%{llvm_shortcommit}.tar.gz
+Source0:	https://github.com/llvm/llvm-project/archive/%{llvm_commit}.tar.gz#/llvm-project-%{maj_ver}.%{min_ver}.%{patch_ver}-%{llvm_shortcommit}.tar.gz
 
 ExclusiveArch:	x86_64
 
@@ -229,7 +237,7 @@ cd llvm
 # are no other compile jobs running.  This will help reduce OOM errors on the
 # builders without having to artificially limit the number of concurrent jobs.
 %if %{without static}
-%cmake_build --target LLVMC
+%cmake_build --target LLVM
 %endif
 %cmake_build
 
