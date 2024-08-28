@@ -39,7 +39,7 @@
 %global debug_package %{nil}
 
 # build for Triton version, see cmake/llvm-hash.txt for LLVM commit hash.
-%global triton_ver 2.3.1
+%global triton_ver 2.1.0
 
 %if "%{triton_ver}" == "2.1.0"
   # PyTorch 2.3.1 ROCm build with aotriton 0.4.1b
@@ -83,7 +83,7 @@
 
 Name:		%{pkg_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}.git%{llvm_shortcommit}
-Release:	3%{?dist}
+Release:	1%{?dist}
 Summary:	LLVM with MLIR for Triton %{triton_ver}
 
 License:	Apache-2.0 WITH LLVM-exception OR NCSA
@@ -329,12 +329,5 @@ EOF
 
 
 %changelog
-* Wed Aug 28 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-3
-- Build without tools to reduce size
-
-* Tue Aug 06 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-2
-- Build without utils and clean up to address out of diskspace issue
-
-* Mon Aug 05 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-1
-- Initial build for Triton 2.3.1
-- Build with MLIR
+* Wed Aug 28 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git49af650-1
+- Build for aotriton / ROCm PyTorch 2.3.1
