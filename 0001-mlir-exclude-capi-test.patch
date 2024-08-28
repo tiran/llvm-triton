@@ -1,0 +1,11 @@
+--- a/mlir/test/CAPI/CMakeLists.txt.orig  2024-08-27 12:22:06.466609625 -0400
++++ b/mlir/test/CAPI/CMakeLists.txt       2024-08-27 12:20:35.272580427 -0400
+@@ -9,6 +9,7 @@
+   add_llvm_executable(${name}
+     PARTIAL_SOURCES_INTENDED
+     ${ARG_UNPARSED_ARGUMENTS})
++  set_target_properties(${name} PROPERTIES EXCLUDE_FROM_ALL ON)
+   llvm_update_compile_flags(${name})
+   if(MLIR_BUILD_MLIR_C_DYLIB)
+     target_link_libraries(${name} PRIVATE
+

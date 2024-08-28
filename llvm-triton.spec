@@ -19,6 +19,9 @@
 # build statically so libtriton does not depend on libLLVM-*.so
 %bcond_without static
 
+# omit tools to reduce size, triton build does not need tools
+%bcond_with tools
+
 # We are building with clang for faster/lower memory LTO builds.
 # See https://docs.fedoraproject.org/en-US/packaging-guidelines/#_compiler_macros
 %global toolchain clang
@@ -26,6 +29,10 @@
 # Opt out of https://fedoraproject.org/wiki/Changes/fno-omit-frame-pointer
 # https://bugzilla.redhat.com/show_bug.cgi?id=2158587
 %undefine _include_frame_pointers
+
+# re-define without -Wp,-D_GLIBCXX_ASSERTIONS, assertions break Triton build
+# undefined reference to `std::__glibcxx_assert_fail(char const*, int, char const*, char const*)'
+%global _preprocessor_defines %(echo %{_preprocessor_defines} | sed 's/-D_GLIBCXX_ASSERTIONS/-U_GLIBCXX_ASSERTIONS/')
 
 # Opt out of debuginfo and debugsource. This is an internal developer package
 # just for Triton builds.
@@ -76,12 +83,17 @@
 
 Name:		%{pkg_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}.git%{llvm_shortcommit}
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	LLVM with MLIR for Triton %{triton_ver}
 
 License:	Apache-2.0 WITH LLVM-exception OR NCSA
 URL:		http://llvm.org
 Source0:	https://github.com/llvm/llvm-project/archive/%{llvm_commit}.tar.gz#/llvm-project-%{maj_ver}.%{min_ver}.%{patch_ver}-%{llvm_shortcommit}.tar.gz
+
+# https://github.com/llvm/llvm-project/commit/4f3c9dabecc6074f8455ca23ba70020d5c556e63
+Patch0001:	0001-mlir-exclude-capi-test.patch
+# disable unused tools to reduce size
+Patch0002:	0002-mlir-disable-tools.patch
 
 ExclusiveArch:	x86_64
 
@@ -201,8 +213,12 @@ cd llvm
 	\
 	-DLLVM_BUILD_RUNTIME:BOOL=ON \
 	\
-	-DLLVM_INCLUDE_TOOLS:BOOL=ON \
+%if %{with tools}
 	-DLLVM_BUILD_TOOLS:BOOL=ON \
+%else
+	-DLLVM_BUILD_TOOLS:BOOL=OFF \
+%endif
+	-DLLVM_INCLUDE_TOOLS:BOOL=ON \
 	-DLLVM_TOOLS_INSTALL_DIR:PATH=bin \
 	\
 	-DLLVM_INCLUDE_TESTS:BOOL=OFF \
@@ -231,7 +247,9 @@ cd llvm
 	-DLLVM_LINK_LLVM_DYLIB:BOOL=ON \
 %endif
 	-DLLVM_INSTALL_TOOLCHAIN_ONLY:BOOL=OFF \
-	-DLLVM_INCLUDE_BENCHMARKS=OFF
+	-DLLVM_INCLUDE_BENCHMARKS=OFF \
+	\
+	-DMLIR_ENABLE_EXECUTION_ENGINE:bool=OFF
 
 # Build libLLVM.so first.  This ensures that when libLLVM.so is linking, there
 # are no other compile jobs running.  This will help reduce OOM errors on the
@@ -263,20 +281,26 @@ EOF
 
 %files
 %license LICENSE.TXT
-%{install_bindir}/*
 %{pkg_datadir}/opt-viewer
+%if %{with tools}
+%{install_bindir}/*
+%else
+%{install_bindir}/llvm-tblgen
+%{install_bindir}/mlir-pdll
+%{install_bindir}/mlir-tblgen
+%endif
 
 
 %files libs
 %license LICENSE.TXT
 %if %{without static}
-%{install_libdir}/libLLVM-%{maj_ver}.git%{llvm_shortcommit}.so
-%{install_libdir}/libLLVM-%{maj_ver}.%{min_ver}*.so
-%{install_libdir}/libMLIR.so.%{maj_ver}.git%{llvm_shortcommit}
+%{install_libdir}/libLLVM-%{maj_ver}*.git%{llvm_shortcommit}.so
+%{install_libdir}/libLLVM-%{maj_ver}*.%{min_ver}*.so
+%{install_libdir}/libMLIR.so.%{maj_ver}*.git%{llvm_shortcommit}
 %endif
-%{install_libdir}/libmlir*.so.%{maj_ver}.git%{llvm_shortcommit}
-%{install_libdir}/libLTO.so.%{maj_ver}.git%{llvm_shortcommit}
-%{install_libdir}/libRemarks.so.%{maj_ver}.git%{llvm_shortcommit}
+%{install_libdir}/libmlir*.so.%{maj_ver}*.git%{llvm_shortcommit}
+%{install_libdir}/libLTO.so.%{maj_ver}*.git%{llvm_shortcommit}
+%{install_libdir}/libRemarks.so.%{maj_ver}*.git%{llvm_shortcommit}
 %config(noreplace) /etc/ld.so.conf.d/%{name}-%{_arch}.conf
 
 %files devel
@@ -294,7 +318,9 @@ EOF
 %{install_libdir}/libmlir*.so
 %{install_libdir}/cmake/llvm
 %{install_libdir}/cmake/mlir
+%if %{with tools}
 %{install_bindir}/llvm-config
+%endif
 %{install_libdir}/objects-Release/obj.MLIR*/*
 
 %files static
@@ -303,6 +329,9 @@ EOF
 
 
 %changelog
+* Wed Aug 28 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-3
+- Build without tools to reduce size
+
 * Tue Aug 06 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-2
 - Build without utils and clean up to address out of diskspace issue
 

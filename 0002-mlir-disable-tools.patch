@@ -1,0 +1,13 @@
+--- a/mlir/CMakeLists.txt.orig    2024-08-28 04:12:53.300609942 -0400
++++ b/mlir/CMakeLists.txt 2024-08-28 04:13:21.505750326 -0400
+@@ -204,7 +204,8 @@
+ endif()
+ # Tools needs to come late to ensure that MLIR_ALL_LIBS is populated.
+ # Generally things after this point may depend on MLIR_ALL_LIBS or libMLIR.so.
+-add_subdirectory(tools)
++# disable unused tools to reduce size
++#add_subdirectory(tools)
+ 
+ if(MLIR_ENABLE_BINDINGS_PYTHON)
+   # Python sources: built extensions come in via lib/Bindings/Python
+
