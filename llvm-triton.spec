@@ -43,19 +43,19 @@
 
 %if "%{triton_ver}" == "2.1.0"
   # PyTorch 2.3.1 ROCm build with aotriton 0.4.1b
-  %global pkg_name llvm-aotriton
+  %global triton_name aotriton
   %global llvm_commit 49af6502c6dcb4a7f7520178bd14df396f78240c
   %global maj_ver 18
   %global min_ver 0
   %global patch_ver 0
 %elif "%{triton_ver}" == "2.3.1"
-  %global pkg_name llvm-triton
+  %global triton_name triton
   %global llvm_commit 5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372
   %global maj_ver 18
   %global min_ver 0
   %global patch_ver 0
 %elif "%{triton_ver}" == "3.0.0"
-  %global pkg_name llvm-triton
+  %global triton_name aotriton
   %global llvm_commit 10dc3a8e916d73291269e5e2b82dd22681489aa1
   %global maj_ver 19
   %global min_ver 0
@@ -64,7 +64,8 @@
   %{error:unsupport Triton version %{triton_ver}}
 %endif
 
-%global llvm_shortcommit %(c=%{llvm_commit}; echo ${c:0:7})
+# traditional short commit has 7 chars, but Triton uses 8 chars
+%global llvm_shortcommit %(c=%{llvm_commit}; echo ${c:0:8})
 
 %global install_prefix %{_libdir}/%{name}
 %global install_bindir %{install_prefix}/bin
@@ -81,9 +82,9 @@
 %global llvm_triple %{_target_platform}
 
 
-Name:		%{pkg_name}
+Name:		llvm-%{triton_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}.git%{llvm_shortcommit}
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	LLVM with MLIR for Triton %{triton_ver}
 
 License:	Apache-2.0 WITH LLVM-exception OR NCSA
@@ -117,8 +118,9 @@ BuildRequires:	python3-setuptools
 
 Requires:	%{name}-libs%{?_isa} = %{version}-%{release}
 
-Provides:	llvm(triton) = %{triton_ver}
-Provides:	llvm(triton-commit) = %{llvm_commit}
+Provides:	%{name}(%{triton_name}) = %{triton_ver}
+Provides:	%{name}(commit) = %{llvm_commit}
+Provides:	%{name}(commit) = %{llvm_shortcommit}
 
 %description
 LLVM is a compiler infrastructure designed for compile-time, link-time,
@@ -139,8 +141,9 @@ Requires:	%{name}-libs%{?_isa} = %{version}-%{release}
 Requires:	libedit-devel
 Requires:	%{name}-static%{?_isa} = %{version}-%{release}
 
-Provides:	llvm-devel(triton) = %{triton_ver}
-Provides:	llvm-devel(triton-commit) = %{llvm_commit}
+Provides:	%{name}-devel(%{triton_name}) = %{triton_ver}
+Provides:	%{name}-devel(commit) = %{llvm_commit}
+Provides:	%{name}-devel(commit) = %{llvm_shortcommit}
 
 %description devel
 This package contains library and header files needed to develop new native
@@ -149,8 +152,9 @@ programs that use the LLVM infrastructure.
 %package libs
 Summary:	LLVM shared libraries
 
-Provides:	llvm-libs(triton) = %{triton_ver}
-Provides:	llvm-libs(triton-commit) = %{llvm_commit}
+Provides:	%{name}-libs(%{triton_name}) = %{triton_ver}
+Provides:	%{name}-libs(commit) = %{llvm_commit}
+Provides:	%{name}-libs(commit) = %{llvm_shortcommit}
 
 %description libs
 Shared libraries for the LLVM compiler infrastructure.
@@ -161,8 +165,9 @@ Requires(postun): /sbin/ldconfig
 %package static
 Summary:	LLVM static libraries
 
-Provides:	llvm-static(triton) = %{triton_ver}
-Provides:	llvm-static(triton-commit) = %{llvm_commit}
+Provides:	%{name}-static(%{triton_name}) = %{triton_ver}
+Provides:	%{name}-static(commit) = %{llvm_commit}
+Provides:	%{name}-static(commit) = %{llvm_shortcommit}
 
 %description static
 Static libraries for the LLVM compiler infrastructure.
@@ -329,6 +334,9 @@ EOF
 
 
 %changelog
+* Wed Aug 28 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22ca-4
+- Use longer commit hash and name in provides
+
 * Wed Aug 28 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22c-3
 - Build without tools to reduce size
 
