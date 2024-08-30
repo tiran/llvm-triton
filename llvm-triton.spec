@@ -74,7 +74,7 @@
 %global pkg_includedir %{_includedir}/%{name}
 %global pkg_datadir %{install_prefix}/share
 
-%global targets_to_build "X86;AMDGPU;NVPTX"
+%global targets_to_build "AMDGPU;NVPTX;X86;PowerPC;SystemZ;AArch64"
 %global enable_projects "mlir;llvm"
 
 %global build_install_prefix %{buildroot}%{install_prefix}
@@ -84,7 +84,7 @@
 
 Name:		llvm-%{triton_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}.git%{llvm_shortcommit}
-Release:	4%{?dist}
+Release:	5%{?dist}
 Summary:	LLVM with MLIR for Triton %{triton_ver}
 
 License:	Apache-2.0 WITH LLVM-exception OR NCSA
@@ -96,7 +96,7 @@ Patch0001:	0001-mlir-exclude-capi-test.patch
 # disable unused tools to reduce size
 Patch0002:	0002-mlir-disable-tools.patch
 
-ExclusiveArch:	x86_64
+ExclusiveArch:	x86_64 aarch64 ppc64 ppc64le s390x
 
 BuildRequires:	gcc
 BuildRequires:	gcc-c++
@@ -334,6 +334,9 @@ EOF
 
 
 %changelog
+* Fri Aug 30 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22ca-5
+- Include aarch64, ppc64le, and s390x
+
 * Wed Aug 28 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git5e5a22ca-4
 - Use longer commit hash and name in provides
 
