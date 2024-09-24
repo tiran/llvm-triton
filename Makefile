@@ -1,4 +1,4 @@
-SPEC = llvm-triton.spec
+SPEC = llvm-aotriton.spec
 
 .PHONY: srpm rpm getsource
 getsource:

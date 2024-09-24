@@ -39,29 +39,23 @@
 %global debug_package %{nil}
 
 # build for Triton version, see cmake/llvm-hash.txt for LLVM commit hash.
-%global triton_ver 2.1.0
+%global triton_ver 0.7b
 
-%if "%{triton_ver}" == "2.1.0"
+%if "%{triton_ver}" == "0.4.1b"
   # PyTorch 2.3.1 ROCm build with aotriton 0.4.1b
   %global triton_name aotriton
   %global llvm_commit 49af6502c6dcb4a7f7520178bd14df396f78240c
   %global maj_ver 18
   %global min_ver 0
   %global patch_ver 0
-%elif "%{triton_ver}" == "2.3.1"
-  %global triton_name triton
-  %global llvm_commit 5e5a22caf88ac1ccfa8dc5720295fdeba0ad9372
-  %global maj_ver 18
-  %global min_ver 0
-  %global patch_ver 0
-%elif "%{triton_ver}" == "3.0.0"
+%elif "%{triton_ver}" == "0.7b"
   %global triton_name aotriton
-  %global llvm_commit 10dc3a8e916d73291269e5e2b82dd22681489aa1
+  %global llvm_commit 657ec7320d8a28171755ba0dd5afc570a5a16791
   %global maj_ver 19
   %global min_ver 0
   %global patch_ver 0
 %else
-  %{error:unsupport Triton version %{triton_ver}}
+  %{error:unsupport %{triton_name} version %{triton_ver}}
 %endif
 
 # traditional short commit has 7 chars, but Triton uses 8 chars
@@ -84,8 +78,8 @@
 
 Name:		llvm-%{triton_name}
 Version:	%{maj_ver}.%{min_ver}.%{patch_ver}.git%{llvm_shortcommit}
-Release:	3%{?dist}
-Summary:	LLVM with MLIR for Triton %{triton_ver}
+Release:	1%{?dist}
+Summary:	LLVM with MLIR for %{triton_name} %{triton_ver}
 
 License:	Apache-2.0 WITH LLVM-exception OR NCSA
 URL:		http://llvm.org
@@ -176,7 +170,13 @@ Static libraries for the LLVM compiler infrastructure.
 
 
 %prep
-%autosetup -p1 -n llvm-project-%{llvm_commit}
+%autosetup -N -n llvm-project-%{llvm_commit}
+
+%if "%{triton_ver}" == "0.4.1b"
+%patch -p1 -P 0001
+%endif
+
+%patch -p1 -P 0002
 
 # not needed, COPR does not have enough disk space
 rm -rf bolt clang compiler-rt cross-project-tests flang libc libclc libcxx libcxxabi libunwind lld lldb llvm-libgcc openmp polly pstl runtimes
@@ -334,6 +334,9 @@ EOF
 
 
 %changelog
+* Tue Sep 24 2024 Christian Heimes <cheimes@redhat.com> - 19.0.0.git657ec732-1
+- Build for aotriton 0.7b
+
 * Fri Aug 30 2024 Christian Heimes <cheimes@redhat.com> - 18.0.0.git49af6502-3
 - Include aarch64, ppc64le, and s390x
 
