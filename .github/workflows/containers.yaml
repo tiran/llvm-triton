@@ -1,0 +1,96 @@
+name: llvm-triton
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+env:
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ghcr.io/${{ github.repository }}
+
+jobs:
+    container:
+        name: "${{ matrix.commit }} container"
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: true
+            matrix:
+                commit:
+                  - "10dc3a8e916d73291269e5e2b82dd22681489aa1"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Install jq
+              run: |
+                set -e
+                sudo apt update
+                sudo apt install -u jq
+
+            - name: Reconfigure Docker data-root
+              run: |
+                set -e
+                sudo mkdir /mnt/docker
+                jq '. + {"data-root": "/mnt/docker"}' < /etc/docker/daemon.json | tee /tmp/daemon.json
+                sudo mv /tmp/daemon.json /etc/docker/daemon.json
+                sudo systemctl restart docker.service
+
+            - name: Docker info
+              run: docker info
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Docker meta
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.IMAGE_NAME }}
+
+            - name: Build local builder image
+              id: build
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  load: True
+                  push: false
+                  file: Containerfile
+                  tags: builder
+                  cache-from: type=gha
+                  cache-to: type=gha
+
+            - name: Build llvm ${{ matrix.commit }}
+              run: |
+                  docker run --rm \
+                      -v ./buildroot:/buildroot:rw \
+                      builder \
+                      build_llvm_triton.py --container-registry "" ${{ matrix.commit }}
+    
+            - name: Import image
+              run: |
+                docker image import buildroot/llvm-triton-*.tar ${{ env.IMAGE_NAME }}
+
+            - name: Push image all tags ${{ env.IMAGE_NAME }}
+              # if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+              if: false
+              run: |
+                docker push --all-tags ${{ env.IMAGE_NAME }}
+
+            - name: Generate artifact attestation
+              # if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+              if: false
+              uses: actions/attest-build-provenance@v1
+              with:
+                subject-name: ${{ env.IMAGE_NAME}}
+                subject-digest: ${{ steps.build.outputs.digest }}
+                push-to-registry: true
